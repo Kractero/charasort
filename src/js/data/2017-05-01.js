@@ -17,6 +17,7 @@ dataSet[dataSetVersion].options = [
   {
     name: 'Remove Default Flags',
     key: 'default',
+    checked: false,
     tooltip: 'Check this to remove all default flags.',
   },
 ]
