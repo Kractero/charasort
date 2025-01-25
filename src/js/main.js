@@ -103,7 +103,7 @@ function init() {
           break
       }
     } else if (timeTaken && choices.length === battleNo - 1) {
-    /** If sorting has ended. */
+      /** If sorting has ended. */
       switch (ev.key) {
         case 'k':
         case '1':
@@ -858,7 +858,7 @@ function preloadImages() {
 
   return Promise.all(
     characterDataToSort.map(async (char, idx) => {
-      characterDataToSort[idx].img = await loadImage(imageRoot + char.img)
+      characterDataToSort[idx].img = await loadImage(imageRoot + char.img + '.png')
     })
   )
 }
