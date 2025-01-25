@@ -67,6 +67,7 @@ function init() {
   document.querySelector('.sorting.save.button').addEventListener('click', () => saveProgress('Progress'))
 
   document.querySelector('.finished.save.button').addEventListener('click', () => saveProgress('Last Result'))
+  document.querySelector('.finished.getimg.button').addEventListener('click', generateImage)
   document.querySelector('.finished.list.button').addEventListener('click', generateTextList)
 
   document.querySelector('.clearsave').addEventListener('click', clearProgress)
@@ -102,7 +103,7 @@ function init() {
           break
       }
     } else if (timeTaken && choices.length === battleNo - 1) {
-      /** If sorting has ended. */
+    /** If sorting has ended. */
       switch (ev.key) {
         case 'k':
         case '1':
@@ -652,6 +653,30 @@ function clearProgress() {
   document.querySelectorAll('.starting.load.button').forEach(el => (el.style.display = 'none'))
 }
 
+function generateImage() {
+  const timeFinished = timestamp + timeTaken
+  const tzoffset = new Date().getTimezoneOffset() * 60000
+  const filename = 'sort-' + new Date(timeFinished - tzoffset).toISOString().slice(0, -5).replace('T', '(') + ').png'
+
+  html2canvas(document.querySelector('.results')).then(canvas => {
+    const dataURL = canvas.toDataURL()
+    const imgButton = document.querySelector('.finished.getimg.button')
+    const resetButton = document.createElement('a')
+
+    imgButton.removeEventListener('click', generateImage)
+    imgButton.innerHTML = ''
+    imgButton.insertAdjacentHTML('beforeend', `<a href="${dataURL}" download="${filename}">Download Image</a><br><br>`)
+
+    resetButton.insertAdjacentText('beforeend', 'Reset')
+    resetButton.addEventListener('click', event => {
+      imgButton.addEventListener('click', generateImage)
+      imgButton.innerHTML = 'Generate Image'
+      event.stopPropagation()
+    })
+    imgButton.insertAdjacentElement('beforeend', resetButton)
+  })
+}
+
 function generateTextList() {
   const data = finalCharacters.reduce((str, char) => {
     str += `${char.rank}. ${char.name}<br>`
@@ -818,27 +843,22 @@ function preloadImages() {
   const totalLength = characterDataToSort.length
   let imagesLoaded = 0
 
-  const loadImage = src => {
-    return new Promise(resolve => {
-      const img = new Image()
-      img.onload = () => {
+  const loadImage = async src => {
+    const blob = await fetch(src).then(res => res.blob())
+    return new Promise((res, rej) => {
+      const reader = new FileReader()
+      reader.onload = ev => {
         progressBar(`Loading Image ${++imagesLoaded}`, Math.floor((imagesLoaded * 100) / totalLength))
-        resolve(src)
+        res(ev.target.result)
       }
-      img.onerror = () => {
-        console.error(`Failed to load image: ${src}`)
-        resolve(null)
-      }
-      img.src = src
+      reader.onerror = rej
+      reader.readAsDataURL(blob)
     })
   }
 
   return Promise.all(
-    characterDataToSort.map((char, idx) => {
-      const imagePath = `/public/chars/${char.img}.png`
-      return loadImage(imagePath).then(() => {
-        characterDataToSort[idx].img = imagePath
-      })
+    characterDataToSort.map(async (char, idx) => {
+      characterDataToSort[idx].img = await loadImage(imageRoot + char.img)
     })
   )
 }
